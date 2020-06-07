@@ -1,8 +1,10 @@
 import vt
 import csv
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import config
+import os
+
 
 client = vt.Client(config.api_key)
 
@@ -20,28 +22,74 @@ def get_score(hash):
         return 'Unable to generate report on file'
 
 def get_time():
-    cur_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # cur_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cur_date = datetime.now()
     return cur_date
 
-#open hash file splunk outputs  
-with open(hash_file_path, mode = 'r') as hash_file:
-    reader = csv.reader(hash_file, delimiter = ',')
-    #skip header line
-    hash_file.readline()
-    for row in reader:
-        images.append(row[0])
-        hashes.append(row[1])
-    with open('results.csv', mode = 'a', newline='') as results_file:
+
+def week_passed(last_accessed):
+    add_week = timedelta(days = 7)
+    str_to_datetime = datetime.strptime(last_accessed, '%Y-%m-%d %H:%M:%S.%f')
+    print(str_to_datetime)
+    print(str_to_datetime + add_week)
+    return str_to_datetime > str_to_datetime + add_week
+    #return str_to_datetime + add_week < str_to_datetime
+
+
+def read_in():
+    #open hash file splunk outputs  
+    with open(hash_file_path, mode = 'r') as hash_file:
+        reader = csv.reader(hash_file, delimiter = ',')
+        #skip header
+        hash_file.readline()
+        for row in reader:
+            images.append(row[0])
+            hashes.append(row[1])
+
+           
+def get_info(hash):
+    score = get_score(hash)
+    last_accessed = get_time()
+    return [score, last_accessed]
+
+def write():
+    with open('results2.csv', mode = 'a', newline='') as results_file:
         fieldnames = ['Image', 'Hash', 'Result', 'Last Accessed']
         writer = csv.writer(results_file, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(fieldnames)
+        file_empty = os.stat('results2.csv').st_size == 0
+        if file_empty:
+            writer.writerow(fieldnames)
         for index, image in enumerate(images):
-            score = get_score(hashes[index])
-            last_accessed = get_time()
-            writer.writerow([image, hashes[index], score, last_accessed])
-            #virustotal api only allows 4 requests/min
-            time.sleep(15)
+            hash = hashes[index]
+            print(f'Current hash: {hash}')
+            if update_hash(hash):
+                score, last_accessed = get_info(hash)[0], get_info(hash)[1]
+                writer.writerow([image, hash, score, last_accessed])
+                time.sleep(15)
+            else:
+                print("That hash has already been checked")
 
+
+def update_hash(hash):
+    with open('results2.csv', mode = 'r') as results_file:
+        reader = csv.reader(results_file, delimiter = ',')
+        for row in reader:
+            print(f'Hash: {hash} \t Value in file: {row[1]}')
+            if row[1] == 'Hash':
+                continue
+            if hash == row[1] and not week_passed(row[3]):
+                return False
+            return True
+
+
+# def start():
+#     read_in()
+#     write()
+
+# start_time = time.time()
+# start()
+# end_time = time.time()
+# print(f'Total time: {end_time - start_time}')
 
 
 
