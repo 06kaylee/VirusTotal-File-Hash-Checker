@@ -1,3 +1,4 @@
 config.py
 results.csv
 test.csv
+__pycache__
