@@ -53,44 +53,101 @@ def week_passed(results, hash):
     elapsed_time = datetime.now() - str_to_datetime
     return elapsed_time > week
     
-    
+def first_write(hash_data):
+    with open('results3.csv', mode = 'a', newline='') as results_file:
+        writer = csv.writer(results_file, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        fieldnames = ['Image', 'Hash', 'Result', 'Last Accessed']
+        print("Writing headers")
+        writer.writerow(fieldnames)
+        for index, row in hash_data.iterrows():
+            cur_image = row['Image']
+            cur_hash = row['Hash']
+            print("Getting score")
+            score, last_accessed = get_info(cur_hash)[0], get_info(cur_hash)[1]
+            print("Adding result to file")
+            writer.writerow([cur_image, cur_hash, score, last_accessed])
+            time.sleep(15)
+        return results_file
+
+def append(results, hash_data):
+    for index, row in hash_data.iterrows():
+        new_image = row['Image']
+        new_hash = row['Hash']
+        if not hash_exists(results, new_hash):
+            print("Hash does not exist")
+            print("Getting score")
+            score, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1]
+            print("Adding result to dataframe")
+            results.loc[len(results)] = [new_image, new_hash, score, last_accessed]
+            time.sleep(15)
+        elif hash_exists(results, new_hash) and week_passed(results, new_hash):
+            print("Updating hash result")
+            print("Getting score")
+            score, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1]
+            print("Modifying result and last access")
+            results.loc[results.Hash == new_hash, 'Last Accessed'] = last_accessed
+            results.loc[results.Hash == new_hash, 'Result'] = score
+            time.sleep(15)
+        else:
+            print("Nothing to be done")
+    return results.to_csv("results3.csv", index = False)
 
 def write(hash_data):
-    with open('results3.csv', mode = 'a', newline='') as results_file:
+    file_exists = os.path.isfile('results3.csv')
+    if not file_exists:
+        print("File is empty")
+        first_write(hash_data)
+    else:
         file_empty = os.stat('results3.csv').st_size == 0
         if file_empty:
-            writer = csv.writer(results_file, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             print("File is empty")
-            fieldnames = ['Image', 'Hash', 'Result', 'Last Accessed']
-            writer.writerow(fieldnames)
-            for index, row in hash_data.iterrows():
-                cur_image = row['Image']
-                cur_hash = row['Hash']
-                score, last_accessed = get_info(cur_hash)[0], get_info(cur_hash)[1]
-                writer.writerow([cur_image, cur_hash, score, last_accessed])
-                time.sleep(15)
-            return results_file
+            first_write(hash_data)
         else:
             print("File is not empty")
             results = pd.read_csv('results3.csv')
-            for index, row in hash_data.iterrows():
-                new_image = row['Image']
-                new_hash = row['Hash']
-                print(f'New image: {new_image} \t\t\t New hash: {new_hash}')
-                if not hash_exists(results, new_hash):
-                    print("hash does not exist")
-                    score, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1]
-                    results.loc[len(results)] = [new_image, new_hash, score, last_accessed]
-                    time.sleep(15)
-                elif hash_exists(results, new_hash) and week_passed(results, new_hash):
-                    print("updating stuff")
-                    score, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1]
-                    results.loc[results.Hash == new_hash, 'Last Accessed'] = last_accessed
-                    results.loc[results.Hash == new_hash, 'Result'] = score
-                    time.sleep(15)
-                else:
-                    print("Nothing to be done")
-            return results.to_csv("results3.csv", index = False)
+            append(results, hash_data)
+
+
+    # else:
+    #     print("File is not empty")
+    #     results = pd.read_csv('results3.csv')
+
+# def write(hash_data):
+#     with open('results3.csv', mode = 'a', newline='') as results_file:
+#         file_empty = os.stat('results3.csv').st_size == 0
+#         if file_empty:
+#             writer = csv.writer(results_file, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+#             print("File is empty")
+#             fieldnames = ['Image', 'Hash', 'Result', 'Last Accessed']
+#             writer.writerow(fieldnames)
+#             for index, row in hash_data.iterrows():
+#                 cur_image = row['Image']
+#                 cur_hash = row['Hash']
+#                 score, last_accessed = get_info(cur_hash)[0], get_info(cur_hash)[1]
+#                 writer.writerow([cur_image, cur_hash, score, last_accessed])
+#                 time.sleep(15)
+#             return results_file
+#         else:
+#             print("File is not empty")
+#             results = pd.read_csv('results3.csv')
+#             for index, row in hash_data.iterrows():
+#                 new_image = row['Image']
+#                 new_hash = row['Hash']
+#                 print(f'New image: {new_image} \t\t\t New hash: {new_hash}')
+#                 if not hash_exists(results, new_hash):
+#                     print("hash does not exist")
+#                     score, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1]
+#                     results.loc[len(results)] = [new_image, new_hash, score, last_accessed]
+#                     time.sleep(15)
+#                 elif hash_exists(results, new_hash) and week_passed(results, new_hash):
+#                     print("updating stuff")
+#                     score, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1]
+#                     results.loc[results.Hash == new_hash, 'Last Accessed'] = last_accessed
+#                     results.loc[results.Hash == new_hash, 'Result'] = score
+#                     time.sleep(15)
+#                 else:
+#                     print("Nothing to be done")
+#             return results.to_csv("results3.csv", index = False)
                 
 
 hash_data = read_in()
