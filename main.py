@@ -74,9 +74,12 @@ def get_info(hash):
         description = get_description(file)
         last_accessed = get_time()
         return [undetected, suspicious, malicious, name, description, last_accessed]
-    except:
+    except vt.APIError:
         last_accessed = get_time()
         return ['n/a', 'n/a', 'n/a', 'n/a', 'n/a', last_accessed]
+    except:
+        return [0, 0, 0, 0, 0, 0]
+    
 
 
 def week_passed(results, hash):
@@ -95,8 +98,7 @@ def first_write(hash_data, destination_path):
         writer.writerow(fieldnames)
         for i in hash_data.index:
             cur_hash = hash_data.loc[i].values[0]
-            print(cur_hash)
-            print("Getting info")
+            print(f"Getting info on: {cur_hash}")
             undetected, suspicious, malicious, name, description, last_accessed = get_info(cur_hash)[0], get_info(cur_hash)[1], get_info(cur_hash)[2], get_info(cur_hash)[3], get_info(cur_hash)[4], get_info(cur_hash)[5]
             print("Adding result to file")
             writer.writerow([cur_hash, undetected, suspicious, malicious, name, description, last_accessed])
@@ -107,16 +109,16 @@ def first_write(hash_data, destination_path):
 def append(results, hash_data, destination_path):
     for i in hash_data.index:
         new_hash = hash_data.loc[i].values[0]
-        print(new_hash)
+        print(f"Evaluating: {new_hash}")
         if not hash_exists(results, new_hash):
-            print("Hash does not exist")
-            print("Getting score")
+            print(f"{new_hash} does not exist in dataframe")
+            print("Getting info")
             undetected, suspicious, malicious, name, description, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1], get_info(new_hash)[2], get_info(new_hash)[3], get_info(new_hash)[4], get_info(new_hash)[5]
             print("Adding result to dataframe")
             results.loc[len(results)] = [new_hash, undetected, suspicious, malicious, name, description, last_accessed]
             time.sleep(15)
         elif hash_exists(results, new_hash) and week_passed(results, new_hash):
-            print("Updating hash result")
+            print(f"{new_hash} is being updated")
             print("Getting score")
             undetected, suspicious, malicious, name, description, last_accessed = get_info(new_hash)[0], get_info(new_hash)[1], get_info(new_hash)[2], get_info(new_hash)[3], get_info(new_hash)[4], get_info(new_hash)[5]
             print("Modifying result and last access")
@@ -144,7 +146,7 @@ def write(hash_data, destination_path):
 
 
 if len(sys.argv) == 1:
-    hash_file_path = input("Enter the input filepath name (example: hashes.csv): ")
+    hash_file_path = input("Enter the input path (example: hashes.csv): ")
     destination_path = input("Enter the destination path (example: output.csv): ")
 elif len(sys.argv) == 2:
     hash_file_path = sys.argv[1]
@@ -156,7 +158,13 @@ else:
 hash_data = read_in(hash_file_path)
 write(hash_data, destination_path)
 
-
+append_to_input_file = input("Would you like to check more hashes and append them to the destination path? Y/N: ")
+if(append_to_input_file.lower() == 'y' or append_to_input_file.lower() == 'yes'):
+    hash_file_path = input("Enter the input path (example: hashes.csv): ")
+    hash_data = read_in(hash_file_path)
+    write(hash_data, destination_path)
+else:
+    print("Finished")
 
 client.close()
 
