@@ -81,29 +81,12 @@ def get_info(hash):
         return [0, 0, 0, 0, 0, 0]
     
 
-
 def week_passed(results, hash):
     week = timedelta(days = 7)
     date = results.loc[results['Hash'] == hash, 'Last Accessed'].iloc[0]
     str_to_datetime = datetime.strptime(date, '%Y-%m-%d %H:%M:%S.%f')
     elapsed_time = datetime.now() - str_to_datetime
     return elapsed_time > week
-
-
-# def first_write(hash_data, destination_path):
-#     with open(destination_path, mode = 'a', newline='') as results_file:
-#         writer = csv.writer(results_file, delimiter = ',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#         fieldnames = ['Hash', 'Undetected', 'Suspicious', 'Malicious', 'Name', 'Description', 'Last Accessed']
-#         print("Writing headers")
-#         writer.writerow(fieldnames)
-#         for i in hash_data.index:
-#             cur_hash = hash_data.loc[i].values[0]
-#             print(f"Getting info on: {cur_hash}")
-#             undetected, suspicious, malicious, name, description, last_accessed = get_info(cur_hash)[0], get_info(cur_hash)[1], get_info(cur_hash)[2], get_info(cur_hash)[3], get_info(cur_hash)[4], get_info(cur_hash)[5]
-#             print("Adding result to file")
-#             writer.writerow([cur_hash, undetected, suspicious, malicious, name, description, last_accessed])
-#             time.sleep(15)
-#         return results_file
 
 
 def append(results, hash_data, destination_path):
@@ -129,8 +112,6 @@ def append(results, hash_data, destination_path):
     return results.to_csv(destination_path, index = False)
 
 
-
-
 def first_write(hash_data, destination_path):
     file_exists = os.path.isfile(destination_path)
     columns = ['Hash', 'Undetected', 'Suspicious', 'Malicious', 'Name', 'Description', 'Last Accessed']
@@ -146,8 +127,6 @@ def first_write(hash_data, destination_path):
         time.sleep(15)
     results_file = results.to_csv(destination_path, index = False)
     return results_file
-
-
 
 
 def write_options(hash_data, destination_path):
@@ -167,8 +146,8 @@ def write_options(hash_data, destination_path):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("InputPath", help = "Enter the csv file path and extension where the hashes to be checked are stored. Example: hashes.csv")
-parser.add_argument("DestinationPath", help = "Enter the csv file path and extension where you want the results to be stored. Example: output.csv")
+parser.add_argument("InputPath", help = "Enter the csv file path where the hashes to be checked are stored. Example: hashes.csv")
+parser.add_argument("DestinationPath", help = "Enter the csv file path where you want the results to be stored. Example: output.csv")
 args = parser.parse_args()
 hash_file_path = args.InputPath
 destination_path = args.DestinationPath
@@ -178,28 +157,6 @@ start_time = time.time()
 write_options(hash_data, destination_path)
 end_time = time.time()
 print(f'Total time: {end_time - start_time}')
-
-
-# if len(sys.argv) == 1:
-#     hash_file_path = input("Enter the input path (example: hashes.csv): ")
-#     destination_path = input("Enter the destination path (example: output.csv): ")
-# elif len(sys.argv) == 2:
-#     hash_file_path = sys.argv[1]
-#     destination_path = input("Enter the destination path (example: output.csv): ")
-# else:
-#     hash_file_path = sys.argv[1]
-#     destination_path = sys.argv[2]
-
-# hash_data = read_in(hash_file_path)
-# write(hash_data, destination_path)
-
-# append_to_input_file = input("Would you like to check more hashes and append them to the destination path? Y/N: ")
-# if(append_to_input_file.lower() == 'y' or append_to_input_file.lower() == 'yes'):
-#     hash_file_path = input("Enter the input path (example: hashes.csv): ")
-#     hash_data = read_in(hash_file_path)
-#     write(hash_data, destination_path)
-# else:
-#     print("Finished")
 
 client.close()
 
